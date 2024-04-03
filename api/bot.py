@@ -121,7 +121,7 @@ while True:
 
     print(user_bids_and_asks)
     # print(user_asks)
-    print("Done printing")
+    # print("Done printing")
 
     
 
