@@ -1,5 +1,7 @@
 from rit_api import *
 import time
+import matplotlib.pyplot as plt
+
 
 # TODO:
 # Determine when to start program, or how to wait until game starts/repeat for multiple rounds
@@ -25,6 +27,15 @@ import time
 #   Modify starter positions in the case we were 'penny'd out. 
 #   Send and cancel orders
 #
+
+
+def plot_histogram(value_map, ax, title):
+    keys = list(value_map.keys())
+    values = list(value_map.values())
+    ax.bar(keys, values)
+    ax.set_xlabel('Categories')
+    ax.set_ylabel('Values')
+    ax.set_title(title)
 
 
 """Note: need to change API Key depending on the machine"""
@@ -123,9 +134,27 @@ while True:
     # print(user_asks)
     # print("Done printing")
 
-    
+    # make histogram of bid and asks rounded. Have bid and asks be above and below each other
+    # look at running current bids?
+
+    # Sample maps of values
+
+    # Creating subplots
+    fig, (ax1, ax2) = plt.subplots(2, 1)
+
+    # Plotting histograms
+    plot_histogram(user_bids_and_asks["bid"], ax1, 'Bids')
+    plot_histogram(user_bids_and_asks["ask"], ax2, 'Asks')
+
+    # Adjust layout
+    plt.tight_layout()
+
+    # Displaying the plot
+    plt.show()
+
 
     time.sleep(1)
+    plt.close()
 
     # print("After Security Book")
     # #print(book)
