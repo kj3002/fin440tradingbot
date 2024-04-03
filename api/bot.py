@@ -24,12 +24,15 @@ import time
 #   Potentially place bluff orders into the order book, but at safe levels
 #   Modify starter positions in the case we were 'penny'd out. 
 #   Send and cancel orders
-#       
+#
+
+
+"""Note: need to change API Key depending on the machine"""
 HOST = None
 API_KEY = None
 if len(sys.argv) < 3:
-    HOST = "http://localhost:9999/v1"
-    API_KEY = "6BGT80LB"
+    HOST = "http://localhost:10001/v1"
+    API_KEY = "STWSSJQT"
 else:
     HOST = sys.argv[1]
     API_KEY = sys.argv[2]
@@ -70,6 +73,8 @@ def get_fair_price(book):
     return (max([bid["price"] for bid in book["bids"]])+min(ask["price"] for ask in book["asks"]))/2
 
 counter = 0
+
+
 while True:
     if trader is None:
         trader = get_trader()
@@ -84,27 +89,58 @@ while True:
     # We have a case and a new tick
     print(f"Period: {case['period']}, Tick: {case['tick']}")
 
-    # Only print limits when they change
-    limits = get_limits()
-    if limits != prev_limits:
-        print(limits)
+
+    if case['tick'] == 1:
+        post_order("GTT","LIMIT", 10000,"BUY",price=19)
+        post_order("GTT","LIMIT", 10000,"BUY",price=19)
+        post_order("GTT","LIMIT", 10000,"BUY",price=19)
+        post_order("GTT","LIMIT", 10000,"BUY",price=19)
+        post_order("GTT","LIMIT", 10000,"BUY",price=19)
+    
+    # # Only print limits when they change
+    # limits = get_limits()
+    # if limits != prev_limits:
+    #     print(limits)
 
     # Taking shortcut for this case
-    ticker = "HAR"
-    book = get_security_book(ticker)
-    #print(book)
-    my_orders = get_my_orders(book)
-    #print(my_orders)
-    #cancel all old orders
-    post_cancel_orders(ids=[order["order_id"] for order in my_orders["bids"]])
-    post_cancel_orders(ids=[order["order_id"] for order in my_orders["asks"]])
-    fair_price = get_fair_price(book)
-    if fair_price is None:
-        continue
-    post_order("HAR","LIMIT",200,"BUY",price=fair_price-EDGE)
-    post_order("HAR","LIMIT",200,"SELL",price=fair_price+EDGE)
-    prev_case = case
-    prev_my_orders = my_orders
+    ticker = "GTT"
+    print("Before Security Book")
+    book = get_security_book(ticker, 10000000)
+
+    # only keep orders if the trader id has user in it
+    user_bids_and_asks = {}
+    user_bids_and_asks["user1"] = {}
+
+    for bid in book["bids"]:
+        if "user" in bid["trader_id"]:
+            user_bids_and_asks[bid["trader_id"]]["bid"] = bid
+
+    for ask in book["asks"]:
+        if "user" in ask["trader_id"]:
+            user_bids_and_asks[ask["trader_id"]]["ask"] = ask
+
+    print(user_bids_and_asks)
+    # print(user_asks)
+    print("Done printing")
+
+    
+
+    time.sleep(1)
+
+    # print("After Security Book")
+    # #print(book)
+    # my_orders = get_my_orders(book)
+    # #print(my_orders)
+    # #cancel all old orders
+    # post_cancel_orders(ids=[order["order_id"] for order in my_orders["bids"]])
+    # post_cancel_orders(ids=[order["order_id"] for order in my_orders["asks"]])
+    # fair_price = get_fair_price(book)
+    # if fair_price is None:
+    #     continue
+    # post_order("HAR","LIMIT",200,"BUY",price=fair_price-EDGE)
+    # post_order("HAR","LIMIT",200,"SELL",price=fair_price+EDGE)
+    # prev_case = case
+    # prev_my_orders = my_orders
 
 
 
