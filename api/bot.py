@@ -1,6 +1,7 @@
 from rit_api import *
 import time
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 # TODO:
@@ -29,13 +30,11 @@ import matplotlib.pyplot as plt
 #
 
 
-def plot_histogram(value_map, ax, title):
-    keys = list(value_map.keys())
-    values = list(value_map.values())
-    ax.bar(keys, values)
-    ax.set_xlabel('Categories')
-    ax.set_ylabel('Values')
-    ax.set_title(title)
+# def plot_histogram(values, ax, title):
+#     plt.hist(values, bins=5)
+#     ax.set_xlabel('Categories')
+#     ax.set_ylabel('Values')
+#     ax.set_title(title)
 
 
 """Note: need to change API Key depending on the machine"""
@@ -86,6 +85,16 @@ def get_fair_price(book):
 counter = 0
 
 
+
+
+fig, (ax1, ax2) = plt.subplots(2, 1)
+user_bids = []
+user_asks = []
+
+# Plotting histograms
+plt.ion()
+
+
 while True:
     if trader is None:
         trader = get_trader()
@@ -120,17 +129,30 @@ while True:
 
     # only keep orders if the trader id has user in it
     user_bids_and_asks = {}
-    user_bids_and_asks["user1"] = {}
+    user_bids = []
+    user_asks = []
+    
+    
+
+    for i in range(1, 16):
+        user_id = "user" + str(i)
+        user_bids_and_asks[user_id] = {"bid": None, "ask" : None}
+    
 
     for bid in book["bids"]:
         if "user" in bid["trader_id"]:
-            user_bids_and_asks[bid["trader_id"]]["bid"] = bid
+            for i in range(0, int(bid["quantity"])):
+                user_bids.append(bid["price"])
+                user_bids_and_asks[bid["trader_id"]]["bid"] = bid
 
     for ask in book["asks"]:
         if "user" in ask["trader_id"]:
-            user_bids_and_asks[ask["trader_id"]]["ask"] = ask
+            for i in range(0, int(ask["quantity"])):
+                user_asks.append(ask["price"])
+                user_bids_and_asks[ask["trader_id"]]["ask"] = ask
 
-    print(user_bids_and_asks)
+    print(user_bids)
+    print(user_asks)
     # print(user_asks)
     # print("Done printing")
 
@@ -140,21 +162,30 @@ while True:
     # Sample maps of values
 
     # Creating subplots
-    fig, (ax1, ax2) = plt.subplots(2, 1)
 
-    # Plotting histograms
-    plot_histogram(user_bids_and_asks["bid"], ax1, 'Bids')
-    plot_histogram(user_bids_and_asks["ask"], ax2, 'Asks')
+    ax1.clear()
+    ax2.clear()
+    bins = np.arange(20, 28.25, 0.25)
+    ax1.hist(user_bids, bins=bins)
+    ax2.hist(user_bids, bins=bins)
 
-    # Adjust layout
-    plt.tight_layout()
+    plt.pause(0.5)
 
-    # Displaying the plot
-    plt.show()
+    # # # Adjust layout
+    # # plt.tight_layout()
+
+    # # Displaying the plot
+    # # plt.show()
+    # # fig.clear()
+
+    # # plt.close()
+    # plt.pause(0.5)
+    # plt.close()
+    ax1.hist(user_bids, bins=range(20,38))
 
 
     time.sleep(1)
-    plt.close()
+    
 
     # print("After Security Book")
     # #print(book)
