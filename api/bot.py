@@ -110,12 +110,12 @@ while True:
     print(f"Period: {case['period']}, Tick: {case['tick']}")
 
 
-    if case['tick'] == 1:
-        post_order("GTT","LIMIT", 10000,"BUY",price=19)
-        post_order("GTT","LIMIT", 10000,"BUY",price=19)
-        post_order("GTT","LIMIT", 10000,"BUY",price=19)
-        post_order("GTT","LIMIT", 10000,"BUY",price=19)
-        post_order("GTT","LIMIT", 10000,"BUY",price=19)
+    # if case['tick'] == 1:
+    #     post_order("GTT","LIMIT", 10000,"BUY",price=19)
+    #     post_order("GTT","LIMIT", 10000,"BUY",price=19)
+    #     post_order("GTT","LIMIT", 10000,"BUY",price=19)
+    #     post_order("GTT","LIMIT", 10000,"BUY",price=19)
+    #     post_order("GTT","LIMIT", 10000,"BUY",price=19)
     
     # # Only print limits when they change
     # limits = get_limits()
@@ -134,25 +134,27 @@ while True:
     
     
 
-    for i in range(1, 16):
+    for i in range(1, 20):
         user_id = "user" + str(i)
         user_bids_and_asks[user_id] = {"bid": None, "ask" : None}
     
 
     for bid in book["bids"]:
         if "user" in bid["trader_id"]:
-            for i in range(0, int(bid["quantity"])):
-                user_bids.append(bid["price"])
-                user_bids_and_asks[bid["trader_id"]]["bid"] = bid
+            # for i in range(0, int(bid["quantity"])):
+            user_bids.extend([bid["price"] for j in range(int(bid["quantity"]))])
+            # user_bids.append(bid["price"])
+            user_bids_and_asks[bid["trader_id"]]["bid"] = bid
 
     for ask in book["asks"]:
         if "user" in ask["trader_id"]:
-            for i in range(0, int(ask["quantity"])):
-                user_asks.append(ask["price"])
-                user_bids_and_asks[ask["trader_id"]]["ask"] = ask
+            # for i in range(0, int(ask["quantity"])):
+            user_asks.extend([ask["price"] for j in range(int(ask["quantity"]))])
+                # user_asks.append(ask["price"])
+            user_bids_and_asks[ask["trader_id"]]["ask"] = ask
 
-    print(user_bids)
-    print(user_asks)
+    # print(user_bids)
+    # print(user_asks)
     # print(user_asks)
     # print("Done printing")
 
@@ -166,8 +168,13 @@ while True:
     ax1.clear()
     ax2.clear()
     bins = np.arange(20, 28.25, 0.25)
-    ax1.hist(user_bids, bins=bins)
-    ax2.hist(user_bids, bins=bins)
+    ax1.set_title("Bids")
+    ax1.hist(user_bids, bins=range(20,30))
+    ax2.set_title("Asks")
+    ax2.hist(user_asks, bins=range(20,30))
+
+    # ax1.hist(user_bids, bins=bins)
+    # ax2.hist(user_asks, bins=bins)
 
     plt.pause(0.5)
 
@@ -181,7 +188,6 @@ while True:
     # # plt.close()
     # plt.pause(0.5)
     # plt.close()
-    ax1.hist(user_bids, bins=range(20,38))
 
 
     time.sleep(1)
