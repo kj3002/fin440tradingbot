@@ -54,6 +54,7 @@ API_ORDERS_PER_TICK = 100
 API_ORDERS_PER_SECOND = 10
 
 EDGE = 0.05
+STOCK = "UB"
 
 prev_case = None
 prev_limits = None
@@ -123,9 +124,10 @@ while True:
     #     print(limits)
 
     # Taking shortcut for this case
-    ticker = "GTT"
+    ticker = "UB"
     print("Before Security Book")
     book = get_security_book(ticker, 10000000)
+    news = get_news()
 
     # only keep orders if the trader id has user in it
     user_bids_and_asks = {}
@@ -155,28 +157,71 @@ while True:
 
     # print(user_bids)
     # print(user_asks)
-    # print(user_asks)
-    # print("Done printing")
+    # print(news)
 
-    # make histogram of bid and asks rounded. Have bid and asks be above and below each other
-    # look at running current bids?
+    lowest_range = 40
+    highest_range = 60
 
-    # Sample maps of values
+    for each_news in news:
+        if each_news["news_id"] != 1 and each_news["news_id"] != 7:
+            price = float(each_news["body"].split()[-1][1:])
+            tick = float(each_news["body"].split()[1])
+            local_high = price + (300 - tick)/50
+            local_min = price - (300 - tick)/50
+            if(local_high < highest_range):
+                highest_range = local_high
+            if(local_min > lowest_range):
+                lowest_range = local_min
+
+
+
+
+    
+
+    highest_range = round(highest_range,2)
+    lowest_range = round(lowest_range,2)
+
+    market_price = get_securities()[0]["last"]
+
+    # print(get_limits())
+    current_limit = int(get_limits()[0]["net"])
+    # if market price < low, buy
+    if market_price < lowest_range and current_limit <= 95000:
+        post_order(ticker=ticker, order_type="LIMIT", quantity=5000, action="BUY", price=lowest_range - 0.03)
+        print("buy order")
+    # if market price > high, sell
+    if market_price > highest_range and current_limit >= -95000:
+        post_order(ticker=ticker, order_type="LIMIT", quantity=5000, action="SELL", price=highest_range + 0.03)
+        print("Sell order")
+    
 
     # Creating subplots
-
     ax1.clear()
     ax2.clear()
-    bins = np.arange(20, 28.25, 0.25)
+    fig.tight_layout(pad = 2)
+    bins = np.arange(lowest_range - 1, highest_range + 1, 0.25)
     ax1.set_title("Bids")
-    ax1.hist(user_bids, bins=range(20,30))
+    ax1.hist(user_bids, bins=bins)
     ax2.set_title("Asks")
-    ax2.hist(user_asks, bins=range(20,30))
+    ax2.hist(user_asks, bins=bins)
+
+
+    # print(get_securities()[0]["last"])
+    ax1.axvline(highest_range, color='r', linewidth=2, label="sell above " + str(highest_range))
+    ax1.axvline(lowest_range, color='g', linewidth=2, label="buy below " + str(lowest_range))
+    ax1.axvline(get_securities()[0]["last"], color='black', linewidth=2)
+    ax2.axvline(highest_range, color='r', linewidth=2, label="sell above " + str(highest_range))
+    ax2.axvline(lowest_range, color='g', linewidth=2, label="buy below " + str(lowest_range))
+    ax2.axvline(get_securities()[0]["last"], color='black', linewidth=2)
+
+    # text = "high: " + str(highest_range) + "\n low: " + str(lowest_range) 
+    # ax1.text(5, 95, text, fontsize=22)
+    ax1.legend()
 
     # ax1.hist(user_bids, bins=bins)
     # ax2.hist(user_asks, bins=bins)
 
-    plt.pause(0.5)
+    plt.pause(0.2)
 
     # # # Adjust layout
     # # plt.tight_layout()
@@ -190,7 +235,7 @@ while True:
     # plt.close()
 
 
-    time.sleep(1)
+    # time.sleep(1)
     
 
     # print("After Security Book")
