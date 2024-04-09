@@ -55,6 +55,7 @@ API_ORDERS_PER_SECOND = 10
 
 EDGE = 0.05
 STOCK = "UB"
+QUANTITY = 10000
 
 prev_case = None
 prev_limits = None
@@ -108,7 +109,7 @@ while True:
         continue
 
     # We have a case and a new tick
-    print(f"Period: {case['period']}, Tick: {case['tick']}")
+    # print(f"Period: {case['period']}, Tick: {case['tick']}")
 
 
     # if case['tick'] == 1:
@@ -125,7 +126,7 @@ while True:
 
     # Taking shortcut for this case
     ticker = "UB"
-    print("Before Security Book")
+    # print("Before Security Book")
     book = get_security_book(ticker, 10000000)
     news = get_news()
 
@@ -186,12 +187,12 @@ while True:
     # print(get_limits())
     current_limit = int(get_limits()[0]["net"])
     # if market price < low, buy
-    if market_price < lowest_range and current_limit <= 95000:
-        post_order(ticker=ticker, order_type="LIMIT", quantity=5000, action="BUY", price=lowest_range - 0.03)
+    if market_price < lowest_range and current_limit <= (100000 - QUANTITY):
+        post_order(ticker=ticker, order_type="LIMIT", quantity=QUANTITY, action="BUY", price=lowest_range - 0.03)
         print("buy order")
     # if market price > high, sell
-    if market_price > highest_range and current_limit >= -95000:
-        post_order(ticker=ticker, order_type="LIMIT", quantity=5000, action="SELL", price=highest_range + 0.03)
+    if market_price > highest_range and current_limit >= -(100000 - QUANTITY):
+        post_order(ticker=ticker, order_type="LIMIT", quantity=QUANTITY, action="SELL", price=highest_range + 0.03)
         print("Sell order")
     
 
