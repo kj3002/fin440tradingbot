@@ -30,13 +30,6 @@ import numpy as np
 #
 
 
-# def plot_histogram(values, ax, title):
-#     plt.hist(values, bins=5)
-#     ax.set_xlabel('Categories')
-#     ax.set_ylabel('Values')
-#     ax.set_title(title)
-
-
 """Note: need to change API Key depending on the machine"""
 HOST = None
 API_KEY = None
@@ -108,25 +101,8 @@ while True:
         time.sleep(0.5)
         continue
 
-    # We have a case and a new tick
-    # print(f"Period: {case['period']}, Tick: {case['tick']}")
-
-
-    # if case['tick'] == 1:
-    #     post_order("GTT","LIMIT", 10000,"BUY",price=19)
-    #     post_order("GTT","LIMIT", 10000,"BUY",price=19)
-    #     post_order("GTT","LIMIT", 10000,"BUY",price=19)
-    #     post_order("GTT","LIMIT", 10000,"BUY",price=19)
-    #     post_order("GTT","LIMIT", 10000,"BUY",price=19)
-    
-    # # Only print limits when they change
-    # limits = get_limits()
-    # if limits != prev_limits:
-    #     print(limits)
-
-    # Taking shortcut for this case
     ticker = "UB"
-    # print("Before Security Book")
+
     book = get_security_book(ticker, 10000000)
     news = get_news()
 
@@ -136,7 +112,6 @@ while True:
     user_asks = []
     
     
-
     for i in range(1, 20):
         user_id = "user" + str(i)
         user_bids_and_asks[user_id] = {"bid": None, "ask" : None}
@@ -160,6 +135,8 @@ while True:
     # print(user_asks)
     # print(news)
 
+
+    """Calculate expected price range given news"""
     lowest_range = 40
     highest_range = 60
 
@@ -175,10 +152,6 @@ while True:
                 lowest_range = local_min
 
 
-
-
-    
-
     highest_range = round(highest_range,2)
     lowest_range = round(lowest_range,2)
 
@@ -186,6 +159,8 @@ while True:
 
     # print(get_limits())
     current_limit = int(get_limits()[0]["net"])
+
+    """Trade if market price is outside of the range"""
     # if market price < low, buy
     if market_price < lowest_range and current_limit <= (100000 - QUANTITY):
         post_order(ticker=ticker, order_type="LIMIT", quantity=QUANTITY, action="BUY", price=lowest_range - 0.03)
@@ -196,7 +171,7 @@ while True:
         print("Sell order")
     
 
-    # Creating subplots
+    """Plot Bids and Asks, along with predicted price ranges + market price. """
     ax1.clear()
     ax2.clear()
     fig.tight_layout(pad = 2)
@@ -206,8 +181,6 @@ while True:
     ax2.set_title("Asks")
     ax2.hist(user_asks, bins=bins)
 
-
-    # print(get_securities()[0]["last"])
     ax1.axvline(highest_range, color='r', linewidth=2, label="sell above " + str(highest_range))
     ax1.axvline(lowest_range, color='g', linewidth=2, label="buy below " + str(lowest_range))
     ax1.axvline(get_securities()[0]["last"], color='black', linewidth=2)
@@ -215,44 +188,9 @@ while True:
     ax2.axvline(lowest_range, color='g', linewidth=2, label="buy below " + str(lowest_range))
     ax2.axvline(get_securities()[0]["last"], color='black', linewidth=2)
 
-    # text = "high: " + str(highest_range) + "\n low: " + str(lowest_range) 
-    # ax1.text(5, 95, text, fontsize=22)
     ax1.legend()
 
-    # ax1.hist(user_bids, bins=bins)
-    # ax2.hist(user_asks, bins=bins)
-
     plt.pause(0.2)
-
-    # # # Adjust layout
-    # # plt.tight_layout()
-
-    # # Displaying the plot
-    # # plt.show()
-    # # fig.clear()
-
-    # # plt.close()
-    # plt.pause(0.5)
-    # plt.close()
-
-
-    # time.sleep(1)
-    
-
-    # print("After Security Book")
-    # #print(book)
-    # my_orders = get_my_orders(book)
-    # #print(my_orders)
-    # #cancel all old orders
-    # post_cancel_orders(ids=[order["order_id"] for order in my_orders["bids"]])
-    # post_cancel_orders(ids=[order["order_id"] for order in my_orders["asks"]])
-    # fair_price = get_fair_price(book)
-    # if fair_price is None:
-    #     continue
-    # post_order("HAR","LIMIT",200,"BUY",price=fair_price-EDGE)
-    # post_order("HAR","LIMIT",200,"SELL",price=fair_price+EDGE)
-    # prev_case = case
-    # prev_my_orders = my_orders
 
 
 
