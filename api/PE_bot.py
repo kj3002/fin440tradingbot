@@ -55,7 +55,7 @@ init(HOST,API_KEY)
 API_ORDERS_PER_TICK = 100
 API_ORDERS_PER_SECOND = 10
 
-EDGE = 0.05
+EDGE = 0.6
 TICKER = "PI"
 QUANTITY = 5000
 
@@ -184,12 +184,12 @@ while True:
 
     """Trade if market price is outside of the range"""
     # if market price < low, buy
-    if market_price < lowest_range and current_limit <= (100000 - QUANTITY):
-        post_order(ticker=TICKER, order_type="LIMIT", quantity=QUANTITY, action="BUY", price=lowest_range - 1)
+    if market_price < lowest_range - EDGE and current_limit <= (100000 - QUANTITY):
+        post_order(ticker=TICKER, order_type="LIMIT", quantity=QUANTITY, action="BUY", price=lowest_range - EDGE)
         print("buy order")
     # if market price > high, sell
-    if market_price > highest_range and current_limit >= -(100000 - QUANTITY):
-        post_order(ticker=TICKER, order_type="LIMIT", quantity=QUANTITY, action="SELL", price=highest_range + 1)
+    if market_price > highest_range + EDGE and current_limit >= -(100000 - QUANTITY):
+        post_order(ticker=TICKER, order_type="LIMIT", quantity=QUANTITY, action="SELL", price=highest_range + EDGE)
         print("Sell order")
 
     
