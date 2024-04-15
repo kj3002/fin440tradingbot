@@ -57,7 +57,7 @@ API_ORDERS_PER_SECOND = 10
 
 EDGE = 0.05
 TICKER = "PI"
-QUANTITY = 10000
+QUANTITY = 5000
 
 Q1_ESTIMATE = 0.4
 Q2_ESTIMATE = 0.24
@@ -123,25 +123,7 @@ while True:
         Q3_ESTIMATE = 0.27
         Q4_ESTIMATE = 0.33
 
-    # We have a case and a new tick
-    # print(f"Period: {case['period']}, Tick: {case['tick']}")
-
     
-
-
-    # if case['tick'] == 1:
-    #     post_order("GTT","LIMIT", 10000,"BUY",price=19)
-    #     post_order("GTT","LIMIT", 10000,"BUY",price=19)
-    #     post_order("GTT","LIMIT", 10000,"BUY",price=19)
-    #     post_order("GTT","LIMIT", 10000,"BUY",price=19)
-    #     post_order("GTT","LIMIT", 10000,"BUY",price=19)
-    
-    # # Only print limits when they change
-    # limits = get_limits()
-    # if limits != prev_limits:
-    #     print(limits)
-
-    # Taking shortcut for this case
     # print("Before Security Book")
 
     book = get_security_book(TICKER, 10000000)
@@ -165,64 +147,79 @@ while True:
 
     """Estimate Price based on news + analyst targets"""
 
+    
+
+    estimates_and_earnings = [0] * 8
+    
     # if you get news, update the estimate
-    # for each_news in news:
-    #     if each_news["news_id"] != 1 and each_news["news_id"] != 7:
-    #         price = float(each_news["body"].split()[-1][1:])
-    #         tick = float(each_news["body"].split()[1])
-    #         local_high = price + (300 - tick)/50
-    #         local_min = price - (300 - tick)/50
-    #         if(local_high < highest_range):
-    #             highest_range = local_high
-    #         if(local_min > lowest_range):
-    #             lowest_range = local_min
 
-
-    estimated_price = (Q1_ESTIMATE + Q2_ESTIMATE + Q3_ESTIMATE + Q4_ESTIMATE) * 12.5
-    estimated_std = statistics.stdev(Q1_ESTIMATE, Q2_ESTIMATE, Q3_ESTIMATE, Q4_ESTIMATE)
-    highest_range = estimated_price + 2 * estimated_std
-    lowest_range = estimated_price - 2 * estimated_std
-
-
-    # # print(get_limits())
-    # current_limit = int(get_limits()[0]["net"])
+    # current news id
+    current_news_id = 0
+    news = get_news()
+    print(type(news))
+    print(news)
+    print(news.reverse())
     
-    # # if market price < low, buy
-    # if market_price < lowest_range and current_limit <= (100000 - QUANTITY):
-    #     post_order(ticker=ticker, order_type="LIMIT", quantity=QUANTITY, action="BUY", price=lowest_range - 0.03)
-    #     print("buy order")
-    # # if market price > high, sell
-    # if market_price > highest_range and current_limit >= -(100000 - QUANTITY):
-    #     post_order(ticker=ticker, order_type="LIMIT", quantity=QUANTITY, action="SELL", price=highest_range + 0.03)
-    #     print("Sell order")
+    if news != None:
+        for each_news in news:
+            print(each_news)
+            if each_news["news_id"] == 9 or each_news["news_id"] == 8:
+                Q4_ESTIMATE = float(each_news["body"].split()[-1][1:])
+
+            if each_news["news_id"] == 7 or each_news["news_id"] == 6:
+                Q3_ESTIMATE = float(each_news["body"].split()[-1][1:])
+            
+            if each_news["news_id"] == 5 or each_news["news_id"] == 4:
+                Q2_ESTIMATE = float(each_news["body"].split()[-1][1:])
+            
+            if each_news["news_id"] == 3 or each_news["news_id"] == 2:
+                Q1_ESTIMATE = float(each_news["body"].split()[-1][1:])
     
+
+    ESTIMATE = round(12.5 * (Q1_ESTIMATE + Q2_ESTIMATE + Q3_ESTIMATE + Q4_ESTIMATE),2)
+    
+    current_limit = int(get_limits()[0]["net"])
+    highest_range = ESTIMATE + 0.01
+    lowest_range = ESTIMATE - 0.01
+
+    """Trade if market price is outside of the range"""
+    # if market price < low, buy
+    if market_price < lowest_range and current_limit <= (100000 - QUANTITY):
+        post_order(ticker=TICKER, order_type="LIMIT", quantity=QUANTITY, action="BUY", price=lowest_range - 1)
+        print("buy order")
+    # if market price > high, sell
+    if market_price > highest_range and current_limit >= -(100000 - QUANTITY):
+        post_order(ticker=TICKER, order_type="LIMIT", quantity=QUANTITY, action="SELL", price=highest_range + 1)
+        print("Sell order")
+
+    
+
 
     """Plot data and estimates"""
     ax1.clear()
     ax2.clear()
     fig.tight_layout(pad = 2)
-    bins = np.arange(lowest_range - 1, highest_range + 1, 0.25)
+    
+    
+    bins = np.arange(lowest_range - 2, highest_range + 2, 0.25)
     ax1.set_title("Bids")
-    ax1.hist(user_bids)
+    ax1.hist(user_bids, bins=bins)
     ax2.set_title("Asks")
-    ax2.hist(user_asks)
-
+    ax2.hist(user_asks, bins=bins)
 
     # print(get_securities()[0]["last"])
+    market_price = get_securities()[0]["last"]
+    
     ax1.axvline(highest_range, color='r', linewidth=2, label="sell above " + str(highest_range))
     ax1.axvline(lowest_range, color='g', linewidth=2, label="buy below " + str(lowest_range))
-    ax1.axvline(estimated_price, color='blue', linewidth=2, label="estimated price " + str(estimated_price))
-    ax1.axvline(get_securities()[0]["last"], color='black', linewidth=2)
+    ax1.axvline(ESTIMATE, color='blue', linewidth=0, label="estimated price " + str(ESTIMATE))
+    ax1.axvline(get_securities()[0]["last"], color='black', linewidth=2, label="market price " + str(market_price))
     ax2.axvline(highest_range, color='r', linewidth=2, label="sell above " + str(highest_range))
     ax2.axvline(lowest_range, color='g', linewidth=2, label="buy below " + str(lowest_range))
-    ax2.axvline(get_securities()[0]["last"], color='black', linewidth=2)
+    ax2.axvline(get_securities()[0]["last"], color='black', linewidth=2, label="market price " + str(market_price))
 
-    # text = "high: " + str(highest_range) + "\n low: " + str(lowest_range) 
-    # ax1.text(5, 95, text, fontsize=22)
     ax1.legend()
 
-    # ax1.hist(user_bids, bins=bins)
-    # ax2.hist(user_asks, bins=bins)
 
     plt.pause(0.15)
 
