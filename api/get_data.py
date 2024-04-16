@@ -61,11 +61,13 @@ csv_file = "entry.csv"
 
 # Writing to CSV file
 with open(csv_file, mode='w', newline='') as file:
-    writer = csv.DictWriter(file, fieldnames=['Q1_Estimate', 'Q1_Earnings', 'Q2_Estimate', 'Q2_Earnings', 'Q3_Estimate', 'Q3_Earnings', 'Q4_Estimate', 'Q4_Earnings'])
+    writer = csv.DictWriter(file, fieldnames=['Tick0', 'Q1_Estimate', 'Tick1', 'Q1_Earnings', 'Tick2', 'Q2_Estimate', 'Tick3', 'Q2_Earnings', 'Tick4', 'Q3_Estimate', 'Tick5', 'Q3_Earnings', 'Tick6', 'Q4_Estimate', 'Tick7', 'Q4_Earnings'])
     
     # Write the header
     writer.writeheader()
     
+
+    got_data = False
     while True:
         if trader is None:
             trader = get_trader()
@@ -79,7 +81,13 @@ with open(csv_file, mode='w', newline='') as file:
 
         current_time_tick = case['tick']
 
+
+        
+        if current_time_tick == 1:
+            got_data = False
+
         estimates_and_earnings = [0] * 8
+        ticks = [0] * 8
         news = get_news()
         
         # reset estimates if tick = 0
@@ -88,29 +96,41 @@ with open(csv_file, mode='w', newline='') as file:
             # read news
             # if you get news, update the estimate
             for news_index in range(0, len(news)):
-                # print(news)
+                print(news)
                 # print(news_index)
                 if news[news_index]["news_id"] != 1:
                     estimates_and_earnings[8 - news_index - 1] = float(news[news_index]["body"].split()[-1][1:])
-            
+                    ticks[8 - news_index - 1] = news[news_index]["tick"]
+
             # write to csv
             entry = {
+                "Tick0" : ticks[0],
                 "Q1_Estimate" : estimates_and_earnings[0],
+                "Tick1" : ticks[1],
                 "Q1_Earnings" : estimates_and_earnings[1],
+                "Tick2" : ticks[2],
                 "Q2_Estimate" : estimates_and_earnings[2],
+                "Tick3" : ticks[3],
                 "Q2_Earnings" : estimates_and_earnings[3],
+                "Tick4" : ticks[4],
                 "Q3_Estimate" : estimates_and_earnings[4],
+                "Tick5" : ticks[5],
                 "Q3_Earnings" : estimates_and_earnings[5],
+                "Tick6" : ticks[6],
                 "Q4_Estimate" : estimates_and_earnings[6],
+                "Tick7" : ticks[7],
                 "Q4_Earnings" : estimates_and_earnings[7]
             }
             # Write the data
-            writer.writerow(entry)
+            if got_data == False:
+                writer.writerow(entry)
+                got_data = True
+            print(ticks)
             print(f"Wrote Entry!")
 
         # We have a case and a new tick
         print(f"Period: {case['period']}, Tick: {case['tick']}")
-        time.sleep(1)
+        time.sleep(0.1)
 
 
 

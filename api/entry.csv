@@ -1,5 +1,2 @@
-Q1_Estimate,Q1_Earnings,Q2_Estimate,Q2_Earnings,Q3_Estimate,Q3_Earnings,Q4_Estimate,Q4_Earnings
-0.52,0.5,0.26,0.24,0.34,0.35,0.36,0.33
-0.39,0.39,0.2,0.16,0.37,0.35,0.43,0.41
-0.37,0.35,0.28,0.28,0.26,0.23,0.22,0.24
-0.31,0.33,0.21,0.24,0.31,0.33,0.26,0.26
+Tick0,Q1_Estimate,Tick1,Q1_Earnings,Tick2,Q2_Estimate,Tick3,Q2_Earnings,Tick4,Q3_Estimate,Tick5,Q3_Earnings,Tick6,Q4_Estimate,Tick7,Q4_Earnings
+68,0.52,128,0.52,166,0.55,231,0.52,274,0.5,366,0.5,424,0.47,478,0.5
