@@ -64,6 +64,8 @@ Q2_ESTIMATE = 0.24
 Q3_ESTIMATE = 0.27
 Q4_ESTIMATE = 0.33
 
+MAX_LIMIT = 100000
+
 prev_case = None
 prev_limits = None
 prev_my_orders = None
@@ -156,25 +158,36 @@ while True:
     # current news id
     current_news_id = 0
     news = get_news()
-    print(type(news))
-    print(news)
-    print(news.reverse())
+    # print(type(news))
+    # print(news)
+    # print(news.reverse())
+
+    HIGHEST_ESTIMATE = 0
     
     if news != None:
-        for each_news in news:
-            print(each_news)
+        for each_news in reversed(news):
+            # print(each_news)
             if each_news["news_id"] == 9 or each_news["news_id"] == 8:
                 Q4_ESTIMATE = float(each_news["body"].split()[-1][1:])
+                # HIGHEST_ESTIMATE = 4
 
             if each_news["news_id"] == 7 or each_news["news_id"] == 6:
                 Q3_ESTIMATE = float(each_news["body"].split()[-1][1:])
+                # HIGHEST_ESTIMATE = 3
             
             if each_news["news_id"] == 5 or each_news["news_id"] == 4:
                 Q2_ESTIMATE = float(each_news["body"].split()[-1][1:])
+                # HIGHEST_ESTIMATE = 2
             
             if each_news["news_id"] == 3 or each_news["news_id"] == 2:
                 Q1_ESTIMATE = float(each_news["body"].split()[-1][1:])
+                # HIGHEST_ESTIMATE = 1
     
+    HIGHEST_ESTIMATE = len(news) // 2
+    if len(news) == 9:
+        HIGHEST_ESTIMATE = 5
+    elif len(news) == 1:
+        HIGHEST_ESTIMATE = 0
 
     ESTIMATE = round(12.5 * (Q1_ESTIMATE + Q2_ESTIMATE + Q3_ESTIMATE + Q4_ESTIMATE),2)
     
@@ -182,15 +195,50 @@ while True:
     highest_range = ESTIMATE + 0.01
     lowest_range = ESTIMATE - 0.01
 
+    # if just started, don't trade until you get a value
+    if HIGHEST_ESTIMATE == 0:
+        MAX_LIMIT = 0
+        EDGE = 100000
+    elif HIGHEST_ESTIMATE == 1:
+        MAX_LIMIT = 10000
+        EDGE = 2 * 1.2
+    elif HIGHEST_ESTIMATE == 2:
+        MAX_LIMIT = 20000
+        EDGE = 2 * 1
+    elif HIGHEST_ESTIMATE == 3:
+        MAX_LIMIT = 40000
+        EDGE = 0.8
+    elif HIGHEST_ESTIMATE == 4:
+        MAX_LIMIT = 100000
+        # QUANTITY = 10000
+        EDGE = 0.4
+    elif HIGHEST_ESTIMATE == 5:
+        MAX_LIMIT = 100000
+        QUANTITY = 10000
+        EDGE = 0.02
+
+    # print("Highest Estimate ", str(HIGHEST_ESTIMATE))
+
     """Trade if market price is outside of the range"""
     # if market price < low, buy
-    if market_price < lowest_range - EDGE and current_limit <= (100000 - QUANTITY):
-        post_order(ticker=TICKER, order_type="LIMIT", quantity=QUANTITY, action="BUY", price=lowest_range - EDGE)
+    if market_price < lowest_range - EDGE and current_limit <= (MAX_LIMIT - QUANTITY):
+        if HIGHEST_ESTIMATE == 5:
+            while current_limit <= (MAX_LIMIT - QUANTITY):
+                post_order(ticker=TICKER, order_type="LIMIT", quantity=QUANTITY, action="BUY", price=lowest_range - EDGE)
+                current_limit += QUANTITY
+        else:
+            post_order(ticker=TICKER, order_type="LIMIT", quantity=QUANTITY, action="BUY", price=lowest_range - EDGE)
         print("buy order")
     # if market price > high, sell
-    if market_price > highest_range + EDGE and current_limit >= -(100000 - QUANTITY):
-        post_order(ticker=TICKER, order_type="LIMIT", quantity=QUANTITY, action="SELL", price=highest_range + EDGE)
+    if market_price > highest_range + EDGE and current_limit >= -(MAX_LIMIT - QUANTITY):
+        if HIGHEST_ESTIMATE == 5:
+            while current_limit >= -(MAX_LIMIT - QUANTITY):
+                post_order(ticker=TICKER, order_type="LIMIT", quantity=QUANTITY, action="SELL", price=highest_range + EDGE)
+                current_limit -= QUANTITY
+        else:
+            post_order(ticker=TICKER, order_type="LIMIT", quantity=QUANTITY, action="SELL", price=highest_range + EDGE)
         print("Sell order")
+
 
     
 
