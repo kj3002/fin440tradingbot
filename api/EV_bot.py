@@ -105,7 +105,7 @@ def execute_trades():
             Q4_ESTIMATE = 0.51
             RISK_FREE_RATE = 0
             RISK_PREMIUM = 0.11
-            # time.sleep(5)
+            time.sleep(5)
         
         # print("Before Security Book")
 
@@ -153,27 +153,40 @@ def execute_trades():
                     Q1_ESTIMATE = float(each_news["body"].split()[-1][1:])
                     # HIGHEST_ESTIMATE = 1
         
-        news_gotten_index = len(news) // 2
-        if len(news) == 9:
-            news_gotten_index = 5
-        elif len(news) == 1:
-            news_gotten_index = 0
-
-        # R = RISK_FREE_RATE + RISK_PREMIUM
-        # # print(Q2_ESTIMATE)
-        # G = (0.6 * (Q1_ESTIMATE + Q2_ESTIMATE + Q3_ESTIMATE + Q4_ESTIMATE))/LAST_YEAR_DIVIDENDS - 1
-        # ESTIMATE = round( (0.6 * (Q1_ESTIMATE + Q2_ESTIMATE + Q3_ESTIMATE + Q4_ESTIMATE)) / (R - G),2)
-        
-        estimated_price = calculate_estimated_price()
-    
-        highest_range = estimated_price + 0.01
-        lowest_range = estimated_price - 0.01
-        
         news_gotten_index = len(news) - 1
         
+        estimated_price = calculate_estimated_price()
+
         current_limit = int(get_limits()[0]["net"])
         highest_range = estimated_price + 0.01
         lowest_range = estimated_price - 0.01
+
+        """OFFLOAD POSITION WITH NEW NEWS"""
+        if last_news_size > len(news) and news_gotten_index <= 4:
+            current_cost = securities[0]["cost"]
+            current_position = securities[0]["position"]
+
+            # if expected price goes below current cost, sell only if market price is current above current cost
+            if current_cost > highest_range and current_position > 0 and market_price > current_cost:
+                while current_position > 0:
+                    if current_position >= 10000:
+                        post_order(ticker=TICKER, order_type="LIMIT", quantity=QUANTITY, action="SELL", price=current_cost)
+                        current_position -= QUANTITY
+                    else:
+                        post_order(ticker=TICKER, order_type="LIMIT", quantity=(QUANTITY - current_position), action="SELL", price=current_cost)
+                        current_position -= (QUANTITY - current_position)
+
+            # if expected price goes above current cost, buy only if market price is currently below current cost
+            elif current_cost < lowest_range and current_position < 0 and market_price < lowest_range:
+                while current_position < 0:
+                    if current_position <= -10000:
+                        post_order(ticker=TICKER, order_type="LIMIT", quantity=QUANTITY, action="BUY", price=current_cost)
+                        current_position += QUANTITY
+                    else:
+                        post_order(ticker=TICKER, order_type="LIMIT", quantity=(QUANTITY-current_position), action="BUY", price=current_cost)
+                        current_position += (QUANTITY - current_position)
+
+            # otherwise position is favorable OR you'll lose money, so don't do anything
 
         # if just started, don't trade until you get a value
         if news_gotten_index == 0:
@@ -181,10 +194,10 @@ def execute_trades():
             EDGE = 100000
         elif news_gotten_index == 1:
             MAX_LIMIT = 10000
-            EDGE = 2 * 1.2
+            EDGE = 0.3
         elif news_gotten_index == 3:
             MAX_LIMIT = 20000
-            EDGE = 2 * 1
+            EDGE = 0.3
         elif news_gotten_index == 5:
             MAX_LIMIT = 40000
             EDGE = 0.8
@@ -192,8 +205,7 @@ def execute_trades():
             MAX_LIMIT = 100000
             # QUANTITY = 10000
             EDGE = 0.4
-        
-        # if we have all the information av
+        # if we have all the information
         elif news_gotten_index == 8:
             MAX_LIMIT = 100000
             QUANTITY = 10000
@@ -286,7 +298,6 @@ def main():
                 # for i in range(0, int(ask["quantity"])):
                 user_asks.extend([ask["price"] for j in range(int(ask["quantity"]))])
 
-
         securities = get_securities()
         market_price = securities[0]["last"]
         RISK_FREE_RATE = securities[1]["last"]
@@ -312,12 +323,6 @@ def main():
                 if each_news["news_id"] == 3 or each_news["news_id"] == 2:
                     Q1_ESTIMATE = float(each_news["body"].split()[-1][1:])
                     # HIGHEST_ESTIMATE = 1
-        
-        HIGHEST_ESTIMATE = len(news) // 2
-        if len(news) == 9:
-            HIGHEST_ESTIMATE = 5
-        elif len(news) == 1:
-            HIGHEST_ESTIMATE = 0
 
         ESTIMATE = calculate_estimated_price()
         
