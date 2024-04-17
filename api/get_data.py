@@ -89,6 +89,10 @@ with open(csv_file, mode='w', newline='') as file:
         estimates_and_earnings = [0] * 8
         ticks = [0] * 8
         news = get_news()
+
+        # print(get_securities())
+        market_price = get_securities()[0]["last"]
+        r_f = get_securities()[0]["last"]
         
         # reset estimates if tick = 0
         if current_time_tick == 479:

@@ -32,6 +32,10 @@ EDGE = 0.6
 TICKER = "BOXX"
 QUANTITY = 5000
 
+global Q1_ESTIMATE
+global Q2_ESTIMATE
+global Q3_ESTIMATE
+global Q4_ESTIMATE
 Q1_ESTIMATE = 0.5
 Q2_ESTIMATE = 0.51
 Q3_ESTIMATE = 0.5
@@ -41,7 +45,10 @@ RISK_PREMIUM = 0.11
 
 MAX_LIMIT = 100000
 
-trader = get_trader()
+# last year's dividends
+LAST_YEAR_DIVIDENDS = (0.47 + 0.48 + 0.46 + 0.49) * 0.6
+
+# trader = get_trader()
 
 # initialize figure
 fig, (ax1, ax2) = plt.subplots(2, 1)
@@ -51,11 +58,32 @@ user_asks = []
 # Plotting histograms
 plt.ion()
 
-def plot_histogram():
+
+def calculate_estimated_price():
+    global ESTIMATE
+    R = RISK_FREE_RATE + RISK_PREMIUM
+    # print(Q2_ESTIMATE)
+    G = (0.6 * (Q1_ESTIMATE + Q2_ESTIMATE + Q3_ESTIMATE + Q4_ESTIMATE))/LAST_YEAR_DIVIDENDS - 1
+    ESTIMATE = round( (0.6 * (Q1_ESTIMATE + Q2_ESTIMATE + Q3_ESTIMATE + Q4_ESTIMATE)) / (R - G),2)
+    return ESTIMATE
+    
+
+def execute_trades():
+    global Q1_ESTIMATE
+    global Q2_ESTIMATE
+    global Q3_ESTIMATE
+    global Q4_ESTIMATE
+
+    global RISK_FREE_RATE
+    global RISK_PREMIUM
+    global QUANTITY
+    global EDGE
+    global MAX_LIMIT
+
+    print("Starting to Execute trades")
+
+    last_news_size = 1
     while True:
-        if trader is None:
-            trader = get_trader()
-        
         case = get_case()
         if case is None:
             time.sleep(0.5)
@@ -66,14 +94,18 @@ def plot_histogram():
             continue
 
         current_time_tick = case['tick']
+        if current_time_tick == 480:
+            time.sleep(1)
 
         # reset estimates if tick = 0
         if current_time_tick == 0:
-            Q1_ESTIMATE = 0.4
-            Q2_ESTIMATE = 0.24
-            Q3_ESTIMATE = 0.27
-            Q4_ESTIMATE = 0.33
-
+            Q1_ESTIMATE = 0.5
+            Q2_ESTIMATE = 0.51
+            Q3_ESTIMATE = 0.5
+            Q4_ESTIMATE = 0.51
+            RISK_FREE_RATE = 0
+            RISK_PREMIUM = 0.11
+            # time.sleep(5)
         
         # print("Before Security Book")
 
@@ -94,14 +126,173 @@ def plot_histogram():
                 # for i in range(0, int(ask["quantity"])):
                 user_asks.extend([ask["price"] for j in range(int(ask["quantity"]))])
 
-        market_price = get_securities()[0]["last"]
+
+        securities = get_securities()
+        market_price = securities[0]["last"]
+        RISK_FREE_RATE = securities[1]["last"]
         
-        """Estimate Price based on news + analyst targets"""
-        estimates_and_earnings = [0] * 8
+        """Estimate Price based on news + analyst targets"""        
+        news = get_news()
         
+        if news != None:
+            for each_news in reversed(news):
+                # print(each_news)
+                if each_news["news_id"] == 9 or each_news["news_id"] == 8:
+                    Q4_ESTIMATE = float(each_news["body"].split()[-1][1:])
+                    # HIGHEST_ESTIMATE = 4
+
+                if each_news["news_id"] == 7 or each_news["news_id"] == 6:
+                    Q3_ESTIMATE = float(each_news["body"].split()[-1][1:])
+                    # HIGHEST_ESTIMATE = 3
+                
+                if each_news["news_id"] == 5 or each_news["news_id"] == 4:
+                    Q2_ESTIMATE = float(each_news["body"].split()[-1][1:])
+                    # HIGHEST_ESTIMATE = 2
+                
+                if each_news["news_id"] == 3 or each_news["news_id"] == 2:
+                    Q1_ESTIMATE = float(each_news["body"].split()[-1][1:])
+                    # HIGHEST_ESTIMATE = 1
+        
+        news_gotten_index = len(news) // 2
+        if len(news) == 9:
+            news_gotten_index = 5
+        elif len(news) == 1:
+            news_gotten_index = 0
+
+        # R = RISK_FREE_RATE + RISK_PREMIUM
+        # # print(Q2_ESTIMATE)
+        # G = (0.6 * (Q1_ESTIMATE + Q2_ESTIMATE + Q3_ESTIMATE + Q4_ESTIMATE))/LAST_YEAR_DIVIDENDS - 1
+        # ESTIMATE = round( (0.6 * (Q1_ESTIMATE + Q2_ESTIMATE + Q3_ESTIMATE + Q4_ESTIMATE)) / (R - G),2)
+        
+        estimated_price = calculate_estimated_price()
+    
+        highest_range = estimated_price + 0.01
+        lowest_range = estimated_price - 0.01
+        
+        news_gotten_index = len(news) - 1
+        
+        current_limit = int(get_limits()[0]["net"])
+        highest_range = estimated_price + 0.01
+        lowest_range = estimated_price - 0.01
+
+        # if just started, don't trade until you get a value
+        if news_gotten_index == 0:
+            MAX_LIMIT = 0
+            EDGE = 100000
+        elif news_gotten_index == 1:
+            MAX_LIMIT = 10000
+            EDGE = 2 * 1.2
+        elif news_gotten_index == 3:
+            MAX_LIMIT = 20000
+            EDGE = 2 * 1
+        elif news_gotten_index == 5:
+            MAX_LIMIT = 40000
+            EDGE = 0.8
+        elif news_gotten_index == 7:
+            MAX_LIMIT = 100000
+            # QUANTITY = 10000
+            EDGE = 0.4
+        
+        # if we have all the information av
+        elif news_gotten_index == 8:
+            MAX_LIMIT = 100000
+            QUANTITY = 10000
+            EDGE = 0.02
+
+        # print("Highest Estimate ", str(HIGHEST_ESTIMATE))
+
+        """Trade if market price is outside of the range"""
+        # if market price < low, buy
+        if market_price < lowest_range - EDGE and current_limit <= (MAX_LIMIT - QUANTITY):
+            if news_gotten_index == 8:
+                while current_limit <= (MAX_LIMIT - QUANTITY):
+                    post_order(ticker=TICKER, order_type="LIMIT", quantity=QUANTITY, action="BUY", price=lowest_range - EDGE)
+                    current_limit += QUANTITY
+            else:
+                post_order(ticker=TICKER, order_type="LIMIT", quantity=QUANTITY, action="BUY", price=lowest_range - EDGE)
+            print("buy order at price " + str(lowest_range - EDGE))
+            print("Estimated Price " + str(estimated_price))
+            print("RF " + str(RISK_FREE_RATE))
+        # if market price > high, sell
+        if market_price > highest_range + EDGE and current_limit >= -(MAX_LIMIT - QUANTITY):
+            if news_gotten_index == 8:
+                while current_limit >= -(MAX_LIMIT - QUANTITY):
+                    post_order(ticker=TICKER, order_type="LIMIT", quantity=QUANTITY, action="SELL", price=highest_range + EDGE)
+                    current_limit -= QUANTITY
+            else:
+                post_order(ticker=TICKER, order_type="LIMIT", quantity=QUANTITY, action="SELL", price=highest_range + EDGE)
+            print("Sell order at price " + str(highest_range + EDGE))
+            print("Estimated Price " + str(estimated_price))
+            print("RF " + str(RISK_FREE_RATE))
+        
+        time.sleep(0.1)
+
+def main():
+    global Q1_ESTIMATE
+    global Q2_ESTIMATE
+    global Q3_ESTIMATE
+    global Q4_ESTIMATE
+
+    global RISK_FREE_RATE
+    global RISK_PREMIUM
+
+
+    # start trading thread
+    t1 = threading.Thread(target=execute_trades)
+
+    t1.start()
+
+    while True:
+        case = get_case()
+        if case is None:
+            time.sleep(0.5)
+            continue
+
+        if prev_case is not None and prev_case["period"] == case["period"] and prev_case["tick"] == case["tick"]:
+            time.sleep(0.5)
+            continue
+
+        current_time_tick = case['tick']
+
+        # reset estimates if tick = 0
+        if current_time_tick == 0:
+            global Q1_ESTIMATE
+            global Q2_ESTIMATE
+            global Q3_ESTIMATE
+            global Q4_ESTIMATE
+            Q1_ESTIMATE = 0.5
+            Q2_ESTIMATE = 0.51
+            Q3_ESTIMATE = 0.5
+            Q4_ESTIMATE = 0.51
+            RISK_FREE_RATE = 0
+            RISK_PREMIUM = 0.11
+        
+        # print("Before Security Book")
+
+        book = get_security_book(TICKER, 10000000)
         news = get_news()
 
-        HIGHEST_ESTIMATE = 0
+        """Get Bids and Asks to plot"""
+        user_bids = []
+        user_asks = []
+
+        for bid in book["bids"]:
+            if "user" in bid["trader_id"]:
+                # for i in range(0, int(bid["quantity"])):
+                user_bids.extend([bid["price"] for j in range(int(bid["quantity"]))])
+
+        for ask in book["asks"]:
+            if "user" in ask["trader_id"]:
+                # for i in range(0, int(ask["quantity"])):
+                user_asks.extend([ask["price"] for j in range(int(ask["quantity"]))])
+
+
+        securities = get_securities()
+        market_price = securities[0]["last"]
+        RISK_FREE_RATE = securities[1]["last"]
+        
+        """Estimate Price based on news + analyst targets"""        
+        news = get_news()
         
         if news != None:
             for each_news in reversed(news):
@@ -128,34 +319,10 @@ def plot_histogram():
         elif len(news) == 1:
             HIGHEST_ESTIMATE = 0
 
-        R = RISK_FREE_RATE + RISK_PREMIUM
-        ESTIMATE = round( (0.6 * (Q1_ESTIMATE + Q2_ESTIMATE + Q3_ESTIMATE + Q4_ESTIMATE)) / (R - G),2)
+        ESTIMATE = calculate_estimated_price()
         
-        current_limit = int(get_limits()[0]["net"])
         highest_range = ESTIMATE + 0.01
         lowest_range = ESTIMATE - 0.01
-
-        # if just started, don't trade until you get a value
-        if HIGHEST_ESTIMATE == 0:
-            MAX_LIMIT = 0
-            EDGE = 100000
-        elif HIGHEST_ESTIMATE == 1:
-            MAX_LIMIT = 10000
-            EDGE = 2 * 1.2
-        elif HIGHEST_ESTIMATE == 2:
-            MAX_LIMIT = 20000
-            EDGE = 2 * 1
-        elif HIGHEST_ESTIMATE == 3:
-            MAX_LIMIT = 40000
-            EDGE = 0.8
-        elif HIGHEST_ESTIMATE == 4:
-            MAX_LIMIT = 100000
-            # QUANTITY = 10000
-            EDGE = 0.4
-        elif HIGHEST_ESTIMATE == 5:
-            MAX_LIMIT = 100000
-            QUANTITY = 10000
-            EDGE = 0.02
 
         """Plot data and estimates"""
         ax1.clear()
@@ -182,131 +349,23 @@ def plot_histogram():
 
         ax1.legend()
 
-
         plt.pause(0.15)
+        time.sleep(0.1)
 
 
-def execute_trades():
-    while True:
-        if trader is None:
-            trader = get_trader()
-        case = get_case()
-        if case is None:
-            time.sleep(0.5)
-            continue
-        if prev_case is not None and prev_case["period"] == case["period"] and prev_case["tick"] == case["tick"]:
-            time.sleep(0.5)
-            continue
 
-        current_time_tick = case['tick']
+    # Plot histogram
+    # t1 = threading.Thread(target=plot_histogram)
 
-        # reset estimates if tick = 0
-        if current_time_tick == 0:
-            Q1_ESTIMATE = 0.4
-            Q2_ESTIMATE = 0.24
-            Q3_ESTIMATE = 0.27
-            Q4_ESTIMATE = 0.33
+    # Execute trades
+    # t2 = threading.Thread(target=execute_trades)
 
-        news = get_news()
+    # t1.start()
+    # print("starting thread")
+    # t1.join()
+# t2.start()
+# t1.join()
+# t2.join()
 
-        market_price = get_securities()[0]["last"]
-
-        """Estimate Price based on news + analyst targets"""
-
-    
-        estimates_and_earnings = [0] * 8
-        
-        # if you get news, update the estimate
-
-        # current news id
-        news = get_news()
-
-        HIGHEST_ESTIMATE = 0
-        
-        if news != None:
-            for each_news in reversed(news):
-                # print(each_news)
-                if each_news["news_id"] == 9 or each_news["news_id"] == 8:
-                    Q4_ESTIMATE = float(each_news["body"].split()[-1][1:])
-                    # HIGHEST_ESTIMATE = 4
-
-                if each_news["news_id"] == 7 or each_news["news_id"] == 6:
-                    Q3_ESTIMATE = float(each_news["body"].split()[-1][1:])
-                    # HIGHEST_ESTIMATE = 3
-                
-                if each_news["news_id"] == 5 or each_news["news_id"] == 4:
-                    Q2_ESTIMATE = float(each_news["body"].split()[-1][1:])
-                    # HIGHEST_ESTIMATE = 2
-                
-                if each_news["news_id"] == 3 or each_news["news_id"] == 2:
-                    Q1_ESTIMATE = float(each_news["body"].split()[-1][1:])
-                    # HIGHEST_ESTIMATE = 1
-        
-        HIGHEST_ESTIMATE = len(news) // 2
-        if len(news) == 9:
-            HIGHEST_ESTIMATE = 5
-        elif len(news) == 1:
-            HIGHEST_ESTIMATE = 0
-
-        R = RISK_FREE_RATE + RISK_PREMIUM
-        ESTIMATE = round( (0.6 * (Q1_ESTIMATE + Q2_ESTIMATE + Q3_ESTIMATE + Q4_ESTIMATE)) / (R - G),2)
-        
-        current_limit = int(get_limits()[0]["net"])
-        highest_range = ESTIMATE + 0.01
-        lowest_range = ESTIMATE - 0.01
-
-        # if just started, don't trade until you get a value
-        if HIGHEST_ESTIMATE == 0:
-            MAX_LIMIT = 0
-            EDGE = 100000
-        elif HIGHEST_ESTIMATE == 1:
-            MAX_LIMIT = 10000
-            EDGE = 2 * 1.2
-        elif HIGHEST_ESTIMATE == 2:
-            MAX_LIMIT = 20000
-            EDGE = 2 * 1
-        elif HIGHEST_ESTIMATE == 3:
-            MAX_LIMIT = 40000
-            EDGE = 0.8
-        elif HIGHEST_ESTIMATE == 4:
-            MAX_LIMIT = 100000
-            # QUANTITY = 10000
-            EDGE = 0.4
-        elif HIGHEST_ESTIMATE == 5:
-            MAX_LIMIT = 100000
-            QUANTITY = 10000
-            EDGE = 0.02
-
-        # print("Highest Estimate ", str(HIGHEST_ESTIMATE))
-
-        """Trade if market price is outside of the range"""
-        # if market price < low, buy
-        if market_price < lowest_range - EDGE and current_limit <= (MAX_LIMIT - QUANTITY):
-            if HIGHEST_ESTIMATE == 5:
-                while current_limit <= (MAX_LIMIT - QUANTITY):
-                    post_order(ticker=TICKER, order_type="LIMIT", quantity=QUANTITY, action="BUY", price=lowest_range - EDGE)
-                    current_limit += QUANTITY
-            else:
-                post_order(ticker=TICKER, order_type="LIMIT", quantity=QUANTITY, action="BUY", price=lowest_range - EDGE)
-            print("buy order")
-        # if market price > high, sell
-        if market_price > highest_range + EDGE and current_limit >= -(MAX_LIMIT - QUANTITY):
-            if HIGHEST_ESTIMATE == 5:
-                while current_limit >= -(MAX_LIMIT - QUANTITY):
-                    post_order(ticker=TICKER, order_type="LIMIT", quantity=QUANTITY, action="SELL", price=highest_range + EDGE)
-                    current_limit -= QUANTITY
-            else:
-                post_order(ticker=TICKER, order_type="LIMIT", quantity=QUANTITY, action="SELL", price=highest_range + EDGE)
-            print("Sell order")
-
-
-# Plot histogram
-t1 = threading.Thread(target=plot_histogram)
-
-# Execute trades
-t2 = threading.Thread(target=execute_trades)
-
-t1.start()
-t2.start()
-t1.join()
-t2.join()
+if __name__ == "__main__":
+    main()
