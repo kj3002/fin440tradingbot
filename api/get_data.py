@@ -1,10 +1,10 @@
-from rit_api import *
+from api.rit_api import *
 import time
 import matplotlib.pyplot as plt
 import numpy as np
 import csv
 
-"""Program for getting estimated EPS data. Used for calculating probability distributions for PE Game"""
+"""Program for getting estimated EPS data. Used for calculating probability distributions for EV Game"""
 
 
 """Note: need to change API Key depending on the machine"""

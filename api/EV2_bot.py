@@ -1,4 +1,4 @@
-from rit_api import *
+from api.rit_api import *
 import time
 import matplotlib.pyplot as plt
 import numpy as np
