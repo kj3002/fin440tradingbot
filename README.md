@@ -1,38 +1,21 @@
 FIN 440 Trading Algorithms
 
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+### Overview
+This code is based on trading games from FIN 440, using a variety of methods in order to maximize returns. My performance before creating the algorithms was average to below-average. After, I was consistently in the top 5. Below is some context to some of the games.
 
-## Getting Started
+### Methodology
+The code continuously pings the server for updated information. Note that the program is limited to 100 pings per second, therefore a wait must be added to slow down. In the last game, EV2_bot, two threads were created in order to gain maximum efficiency between displaying data (which takes a very long time), and running the algorithm (which takes very little time).
 
-First, run the development server:
+The code is also very risk averse. We take on positions with high likelihood of success, using math and sometimes taking in various data points to calculate probabilities assuming a relatively normal distribution. This does not, however, guarantee to always get first place, since taking a huge position early on may pay off later.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Visualizations are added to allow the trader to see the current status of the market, and make additional bets. Additionally, if the program seems to be taking wild transactions, the trader can stop the program. 
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Price Discovery (PD)
+The price discovery game is as follows: the initial range of prices is between 40 and 60. Throughout the game, an updated price will be given, and given the formula, we can estimate a range to where the actual price is. If the current price is outside the estimated range, the program automatically buys or sell. This means the program cannot lose money, and since the program knows prices and estimates before everyone else, it can also get a better price than others.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### EV1_Bot
+This game gives news updates with EPS data. At the end, it will give the final EPS (and therefore final share price amount), and then clear the position in the portfolio.
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+For this game, data was garnered in order to see general trends in median and standard deviation (see EV1_data.csv). Though not necessarily a "normal distribution", it is reasonable to assume that as more and more EPS data comes in, the standard deviation of the final price of the share gets lower and lower. Therefore, as EPS data comes it, the program calculates the expected price and the ranges given standard deviation. Only until it reaches the last two EPS estimates will the standard deviation go down.
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Note that most trades which happen in this program happen in the last minute. This means the program isn't necessarily making money earlier on in the game, thereby being risk averse but also not gaining anything. Therefore, it is up to the trader to make early calls and bets.
