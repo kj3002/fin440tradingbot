@@ -1,7 +1,7 @@
 FIN 440 Trading Algorithms
 
 ### Overview
-This code is based on trading games from FIN 440, using a variety of methods in order to maximize returns. My performance before creating the algorithms was average to below-average. After, I was consistently in the top 5. Below is some context to some of the games.
+This code is based on trading games from FIN 440, using a variety of methods in order to maximize returns. The class did not require, nor expect any coding. However, my performance before creating the algorithms was average to below-average. After, I was consistently in the top 5. Below is some context to some of the games.
 
 ### Methodology
 The code continuously pings the server for updated information. Note that the program is limited to 100 pings per second, therefore a wait must be added to slow down. In the last game, EV2_bot, two threads were created in order to gain maximum efficiency between displaying data (which takes a very long time), and running the algorithm (which takes very little time).
